@@ -1,0 +1,216 @@
+<?php
+/*
+Plugin Name: Mi primer plugin
+Plugin URI: Http// Mi primer plugin.com
+Description: Este es mi primer plugin que va cambiar los titulos de cada entrada de un blog o categoria
+Version: 1.0
+Author: Alejandro Arango
+Author URI: Http://miurlpersonal.com
+License: GPL2
+License URI:  https://www.gnu.org/license/gpl-2.0.html
+Text Domain: miprimerplugin
+Domain Patch: /languages
+*/
+if( ! function_exists('mp_install') ) {
+    function mp_install(){
+    //Accion a ejecutar
+//    require_once 'activador.php';
+    }
+}
+
+if( ! class_exists('MP_Mi_Class') ) {
+    class  MP_Mi_Class {
+        
+    }
+}
+
+function mp_deactivation() {
+    // Accion a ejecutar
+    flush_rewrite_rules();
+}
+
+function mp_desinstall() {
+    // Borrar Tablas en la base de datos
+    // Quitar alguna configuraciones
+    // u Opciones 
+}
+
+register_activation_hook( __FILE__, 'mp_install' );
+register_deactivation_hook( __FILE__, 'mp_deactivation' );
+
+require_once plugin_dir_path(__FILE__) . 'lib/helpers.php';
+
+if( !function_exists('mp_options_page') ) {
+    
+    // Linea 1000
+    add_action('admin_menu', 'mp_options_page', 9);
+    
+    // Linea 5000
+    add_action('admin_menu', 'mp_options_page2', 5);
+    
+    function mp_options_page2() {
+        
+    }
+    
+    function mp_options_page() {
+    
+        $menus = [];
+        $submenus = [];
+
+        $menus[] = [
+            'PageTitle' => 'MP Pruebas',
+            'menuTitle' => 'MP Pruebas',
+            'capacibility' => 'manage_options',
+            'menuSlug' => 'mp_pruebas',
+            'functionName' => 'mp_pruebas_page_display',
+            'iconUrl' => plugin_dir_url(__FILE__) . 'img/sveacol-20-wp.svg',
+            'position' => 15,
+        ];
+
+          $submenus[] = [
+            'parentSlug' => 'mp_pruebas',
+            'PageTitle' => 'Titulo submenu 1',
+            'menuTitle' => 'Titulo submenu 1',
+            'capacibility' => 'manage_options',
+            'menuSlug' => 'submenu1_mp_pruebas',
+            'functionName' => 'submenu1_mp_pruebas_page_display',
+        ];
+        
+        addMenusPages( $menus );
+        addSubmenusPage( $submenus );
+        
+    }
+    
+}
+
+if( ! function_exists( 'mp_pruebas_page_display' ) ) {
+
+    function mp_pruebas_page_display() {
+        
+        ?>
+
+        <?php if( current_user_can('manage_options') ) : ?>
+        <!-- HTML -->
+    
+        <div class="wrap">
+
+            <form action="" method="post">
+
+                <input type="text" placeholder="Texto">
+
+                <?php submit_button('Enviar'); ?>    
+                
+            </form>
+
+        </div>
+
+        <?php else: ?>
+
+        <p>
+            No tienes acceso a esta sección
+        </p>
+
+        <?php endif; ?>
+
+        <?php
+    
+     }
+    
+}
+
+if( ! function_exists( 'submenu1_mp_pruebas_page_display' ) ) {
+
+    function submenu1_mp_pruebas_page_display() {
+        
+        ?>
+
+        <?php if( current_user_can('manage_options') ) : ?>
+        <!-- HTML -->
+       
+        <div class="wrap">
+            
+            <h1>Esta es la pagina del submenu 1 de MP Pruebas </h1>
+
+            <form action="" method="post">
+
+                <input type="text" placeholder="Texto">
+
+                <?php submit_button('Enviar'); ?>    
+                
+            </form>
+
+        </div>
+
+        <?php else: ?>
+
+        <p>
+            No tienes acceso a esta sección
+        </p>
+
+        <?php endif; ?>
+
+        <?php
+    
+     }
+    
+}
+    
+do_action( 'save_post', $post->ID, $post );
+    
+add_action( 'save_post', 'funcion_callback_save_post', 10, 2);
+    
+function funcion_callback_save_post( $post_id, $post ) {
+    
+    if( wp_is_post_revision( $post_id ) ) {
+        return;
+    }
+    
+    $autor_id = $post->post_autor;
+    $name_autor = get_the_author_meta( 'display_name', $autor_id );
+    $email_autor = get_the_author_meta( 'user_email', $autor_id );
+    $title = $post->title;
+    $permalink = get_permalink( $post_id );
+    
+    // Valores para el envio del email 
+    $para [] = sprintf( '%s <%s>', $name_autor, $email_autor );
+    $asunto = sprintf( 'Publicacion guardada: %s' , $title );
+    $mensaje = sprintf( 'Felicitaciones, %s! su publicacion "%s" ha sido guardada,' . "\n\n", $name_autor, $title);
+    $mensaje .= sprintf( 'Ver publicacion: %s', $permalink );
+    $headers[] = '';
+                       
+    wp_mail( $para, $asunto, $mensaje, $headers);
+    
+}
+
+add_action( 'publish_mis_publicaciones', 'notificacion_email_post_publicado', 10, 2);
+    
+function notificacion_email_post_publicado( $post_id, $post ) {
+    
+    $autor_id = $post->post_autor;
+    $name_autor = get_the_author_meta( 'display_name', $autor_id );
+    $email_autor = get_the_author_meta( 'user_email', $autor_id );
+    $title = $post->title;
+    $permalink = get_permalink( $post_id );
+    
+    // Valores para el envio del email 
+    $para [] = sprintf( '%s <%s>', $name_autor, $email_autor );
+    $asunto = sprintf( 'Publicacion guardada: %s' , $title );
+    $mensaje = sprintf( 'Felicitaciones, %s! su publicacion "%s" ha sido guardada,' . "\n\n", $name_autor, $title);
+    $mensaje .= sprintf( 'Ver publicacion: %s', $permalink );
+    $headers[] = '';
+                       
+    wp_mail( $para, $asunto, $mensaje, $headers);
+    
+}
+
+add_action( 'comment_post', 'notificacion_email_comentarios', 10, 2);
+
+function notificacion_email_comentarios( $comment_ID,  $comment_aproved ) {
+    
+    if( 1 === $comment_approved ) {
+ 
+        
+        
+    }
+    
+}
